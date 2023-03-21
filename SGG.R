@@ -501,18 +501,18 @@ output$plot_simple <- renderPlot({
 })
 
 # Set up the summary simple output
-# output$summary_simple <- renderPrint({
-#   req(input$dependent_var_id, input$independent_var_id, data_simple())
-#   x = as.numeric(unlist(data_simple()[,input$independent_var_id]))
-#   y = as.numeric(unlist(data_simple()[,input$dependent_var_id]))
-#   
-#   # Fit a linear regression model
-#   lm_model <- lm(y~x,data=data_simple())
-#   
-#   # Print the summary of the model and the regression equation
-#   summary(lm_model)
-#  
-# })
+output$summary_simple <- renderPrint({
+  req(input$dependent_var_id, input$independent_var_id, data_simple())
+  x = as.numeric(unlist(data_simple()[,input$independent_var_id]))
+  y = as.numeric(unlist(data_simple()[,input$dependent_var_id]))
+
+  # Fit a linear regression model
+  lm_model <- lm(y~x,data=data_simple())
+
+  # Print the summary of the model and the regression equation
+  summary(lm_model)
+
+})
  
 # # multiple linear regression
 # data_multi <- reactive({
