@@ -2,7 +2,7 @@
 ## MODEL MONITORING TOOL made with shiny 
 
 <p>This website is for those people who want to visualize dataset, fit the model but don't know any programming language <p>
-<p>MMT is TOOL with following feature. <p>
+<p>MMT is TOOL with following feature's. <p>
 <h3>User can...</h3>
  <ul>
  <li>Preview Dataset</li>
