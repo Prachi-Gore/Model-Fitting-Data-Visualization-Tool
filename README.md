@@ -8,8 +8,8 @@
  <li>Preview Dataset</li>
  <li>Visualize Graph like Boxplot, Histogram, Scatter, Barchart</li>
  <li>Calculate Summary Statistics</li>
- <li>Fit the Regression model for eg.,Simple, Multiple Linear Regression</li>
- <li>Fit the Classification model for eg.,KNN </li>
+ <li>Fit the Regression model for eg.,Simple, Multiple Linear Regression, Logistic</li>
+ <li>Fit the Classification model for eg.,KNN, LDA, QDA, Naive Bayes</li>
  </ul>
 
 <h3>Tech Stack Used</h3>
