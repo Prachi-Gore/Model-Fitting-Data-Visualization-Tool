@@ -13,16 +13,18 @@ library(class)#KNN
 library(MASS)#Discriminant Analysis
 library(e1071)#Naive Bayes
 library(GGally)# ggpairs
-library(caret)#confusionMatrix
+library(caret)#confusionMatrix #not used
 
-header <- dashboardHeader(
+
+
+header = dashboardHeader(
   title = "Model Monitoring Tool",
   #dropdownMenuOutput("messageMenu")
   tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/sopan-patil-24a995210",icon("linkedin"),"Sopan Patil",target="_blank")),
   tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/samiya-pathan-3a784b240",icon("linkedin"),"Samiya Pathan",target="_blank")),
   tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/prachi-gore-4772a11a5",icon("linkedin"),"Prachi Gore",target="_blank"))
 )
-sidebar <- dashboardSidebar(
+sidebar = dashboardSidebar(
   sidebarMenu(
     # Setting id makes input$tabs give the tabName of currently-selected tab
     id = "tabs",
@@ -96,12 +98,19 @@ line_layout=sidebarPanel(file_input("file_line"),select_input("line_var1_id","Se
 summary_layout=sidebarPanel(file_input("file_summary"),select_input("summary_var", "Select a variable"),actionButton("calculate", "Calculate"))
 
 simple_layout=sidebarPanel(file_input("file_simple"),select_input("sd_var_id", "Select Response Variable"),
-                           select_input("si_var_id", "Select Predictors"),numericInput("simple_size_s", label = "Enter a size of train dataset in %:", value = 80,min=10,max=100))
+                           select_input("si_var_id", "Select Predictors"),numericInput("simple_size", label = "Enter a size of train dataset in %:", value = 80,min=10,max=100))
+simple_layout_=sidebarPanel(file_input_model("file_simple_train","Upload Train Dataset"),file_input_model("file_simple_test","Upload Test Dataset"),select_input("simple_response_id","Select Response Variable"),
+                            select_input("simple_pred_id", "Select Predictors"))
+ model_layout=function(fileId,depVarId,indVarId,sizeId){
+   return(sidebarPanel(file_input(fileId),
+                       select_input(depVarId, "Select dependent variable"),
+                      selectInput(indVarId, "Select independent variables", choices = NULL,multiple = TRUE),
+                      numericInput(sizeId, label = "Enter a size of train dataset in %:", value = 80,min=10,max=100))
+         )}
 
-multi_layout=sidebarPanel(file_input("file_multi"),
-select_input("md_var_id", "Select dependent variable"),
-selectInput("mi_var_id", "Select independent variables", choices = NULL,multiple = TRUE),
-numericInput("multiple_size", label = "Enter a size of train dataset in %:", value = 80,min=10,max=100))
+multi_layout=model_layout(fileId = "file_multi",depVarId = "md_var_id",indVarId = "mi_var_id",sizeId = "multiple_size")
+
+
 
 
 log_layout=sidebarPanel(file_input("file_log"),select_input("ld_var_id", "Select Response variable"),
@@ -132,49 +141,133 @@ barchart_ui=fluidPage(title="bar graph",sidebarLayout(barchart_layout,mainPanel 
 boxplot_ui=fluidPage(title="bar line plot",sidebarLayout(boxplot_layout,mainPanel (plotOutput("boxplot"))))
 line_ui=fluidPage(title="line-chart",sidebarLayout(line_layout,mainPanel (plotOutput("lineplot"))))
 summary_ui=fluidPage(title="",sidebarLayout(summary_layout,mainPanel(verbatimTextOutput("result"))))
-simple_ui=fluidPage(title="Simple Regression",sidebarLayout(simple_layout,mainPanel(h3(textOutput("text_simple")),h4(textOutput("mse_simple")),h5(textOutput("adjr2_simple")),plotOutput("plot_simple"),verbatimTextOutput("summary_simple"))))
-multi_ui=fluidPage(title="Multiple Regression",sidebarLayout(multi_layout,mainPanel(h3(textOutput("text_multiple")),h4(textOutput("mse_multiple")),h5(textOutput("adjr2_multiple")),plotOutput("matrix_plot"),
+
+simple_ui=fluidPage(
+  radioButtons("option_simple", label = "",
+               choices = c("Specific splitting","Random splitting")),
+  conditionalPanel(
+  condition = "input.option_simple == 'Specific splitting'",
+  title="Simple Regression",
+  sidebarLayout(simple_layout_,
+                mainPanel(h3(textOutput("text_simple_")),h4(textOutput("mse_simple_")),h4(textOutput("adjr2_simple_")),plotOutput("plot_simple_"),verbatimTextOutput("summary_simple_"))
+  )
+  ),
+  conditionalPanel(
+    condition = "input.option_simple == 'Random splitting'",
+    title="Simple Regression",
+    sidebarLayout(simple_layout,
+                  mainPanel(h3(textOutput("text_simple")),h4(textOutput("mse_simple")),h4(textOutput("adjr2_simple")),plotOutput("plot_simple"),verbatimTextOutput("summary_simple")))
+  )
+)
+
+multi_ui=fluidPage(
+  
+  title="Multiple Regression",sidebarLayout(multi_layout,mainPanel(h3(textOutput("text_multiple")),h4(textOutput("mse_multiple")),h4(textOutput("adjr2_multiple")),plotOutput("matrix_plot"),
                                                                                     verbatimTextOutput("summary_multi"))))
 
 log_ui=fluidPage(title="Logistic Classification",sidebarLayout(log_layout,mainPanel(h3(textOutput("text_logistic")),h4(textOutput("logisticAccuracy")),
                                                                                     verbatimTextOutput("logisticCM"),verbatimTextOutput("summary_logistic"))))
 
-knn_ui=fluidPage(
-  title="K Nearest Neighbours",
-  #titlePanel(h3("Data Visualization")),
-  sidebarLayout(
-    knn_layout,
-    mainPanel (h3(textOutput("knnAccuracy")),verbatimTextOutput("knnCM"))
+knn_ui = fluidPage(
+  radioButtons("option_knn", label = "",
+               choices = c("Specific splitting", "Random splitting")),
+  conditionalPanel(
+    condition = "input.option_knn == 'Specific splitting'",
+    title="K Nearest Neighbours",
+    sidebarLayout(
+      knn_layout,
+      mainPanel (h3(textOutput("knnAccuracy")),verbatimTextOutput("knnCM"))
+    )
+  ),
+  conditionalPanel(
+    condition = "input.option_knn == 'Random splitting'",
+    title="K Nearest Neighbours",
+    sidebarLayout(
+      # model_layout("file_knn","knnd_var_id","knni_var_id","knn_size"),
+      sidebarPanel(file_input_model("file_knn","Upload Dataset"),select_input("knnd_var_id","Select Response Variable"),
+                   selectInput("knni_var_id", "Select Predictors", choices = NULL,multiple = TRUE),numericInput(inputId = "k_", label = "Enter a K:", value = "",min=1),
+                   numericInput("knn_size", label = "Enter a size of train dataset in %:", value = 80,min=10,max=100)),
+      mainPanel(h3(textOutput("knn_accuracy")),verbatimTextOutput("knn_cm"))
+    
+    
   )
 )
-lda_ui=fluidPage(
-  title="Linear Discriminant Analysis",
-  #titlePanel(h3("Data Visualization")),
-  sidebarLayout(
-    lda_layout,
-    mainPanel (h3(textOutput("ldaAccuracy")),verbatimTextOutput("ldaCM"))
+)
+lda_ui = fluidPage(
+  radioButtons("option_lda", label = "",
+               choices = c("Specific splitting", "Random splitting")),
+  conditionalPanel(
+    condition = "input.option_lda == 'Specific splitting'",
+    title="Linear Discriminant Analysis",
+    sidebarLayout(
+      lda_layout,
+      mainPanel (h3(textOutput("ldaAccuracy")),verbatimTextOutput("ldaCM"))
+    )
+  ),
+  conditionalPanel(
+    condition = "input.option_lda == 'Random splitting'",
+    title="Linear Discriminant Analysis",
+    sidebarLayout(
+      model_layout("file_lda","ldad_var_id","ldai_var_id","lda_size"),
+      mainPanel(h3(textOutput("lda_accuracy")),verbatimTextOutput("lda_cm"))
+    )
   )
 )
+
 qda_ui=fluidPage(
+  radioButtons("option_qda", label = "",
+               choices = c("Specific splitting", "Random splitting")),
+  conditionalPanel(
+    condition = "input.option_qda == 'Specific splitting'",
   title="Quadratic Discriminant Analysis",
-  #titlePanel(h3("Data Visualization")),
+ 
   sidebarLayout(
     qda_layout,
     mainPanel (h3(textOutput("qdaAccuracy")),verbatimTextOutput("qdaCM"))
   )
-)
-nb_ui=fluidPage(
-  title="Naive Bayes",
-  #titlePanel(h3("Data Visualization")),
+),
+conditionalPanel(
+  condition = "input.option_qda == 'Random splitting'",
+  title="Quadratic Discriminant Analysis",
   sidebarLayout(
-    nb_layout,
-    mainPanel (h3(textOutput("nbAccuracy")),verbatimTextOutput("nbCM"))
+    model_layout("file_qda","qdad_var_id","qdai_var_id","qda_size"),
+    mainPanel(h3(textOutput("qda_accuracy")),verbatimTextOutput("qda_cm"))
+  )
+)
+)
+# nb_ui=fluidPage(
+#   title="Naive Bayes",
+#   #titlePanel(h3("Data Visualization")),
+#   sidebarLayout(
+#     nb_layout,
+#     mainPanel (h3(textOutput("nbAccuracy")),verbatimTextOutput("nbCM"))
+#   )
+# )
+nb_ui=fluidPage(
+  radioButtons("option_nb", label = "",
+               choices = c("Specific splitting", "Random splitting")),
+  conditionalPanel(
+    condition = "input.option_nb == 'Specific splitting'",
+    title="Naive Bayes",
+    sidebarLayout(
+      nb_layout,
+      mainPanel (h3(textOutput("nbAccuracy")),verbatimTextOutput("nbCM"))
+    )
+  ),
+  conditionalPanel(
+    condition = "input.option_nb == 'Random splitting'",
+    title="Naive Bayes",
+    sidebarLayout(
+      model_layout("file_nb","nbd_var_id","nbi_var_id","nb_size"),
+      mainPanel(h3(textOutput("nb_accuracy")),verbatimTextOutput("nb_cm"))
+    )
   )
 )
 
 
 
-body <- dashboardBody(
+
+body = dashboardBody(
   tabItems(
     tabItem("view",view_ui),
     tabItem("Bar-Chart",barchart_ui),
@@ -199,7 +292,7 @@ ui = dashboardPage(
   title = "Model Monitoring Tool"
 )
 
-server <- function(input, output,session) {
+server = function(input, output,session) {
   
   data_view= reactive({
     
@@ -217,7 +310,7 @@ server <- function(input, output,session) {
       }
     }
     else{
-      df <- read.csv(input$file_view$datapath,header = input$header )
+      df = read.csv(input$file_view$datapath,header = input$header )
     }
     if(input$disp == "head") {
       return(head(df))
@@ -238,7 +331,7 @@ server <- function(input, output,session) {
       return(select_if(df, is.numeric))
     }
     else{
-      df <- read.csv(input$file_hist$datapath )
+      df = read.csv(input$file_hist$datapath )
       return(select_if(df, is.numeric))
     }
     
@@ -253,7 +346,7 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_scatter$datapath )
+      df = read.csv(input$file_scatter$datapath )
       
     }
     return(select_if(df, is.numeric))
@@ -269,7 +362,7 @@ server <- function(input, output,session) {
       df=as.data.frame(read_excel(input$file_bar$datapath))
     }
     else{
-      df <- read.csv(input$file_bar$datapath )
+      df = read.csv(input$file_bar$datapath )
     }
     return(df)
     
@@ -288,7 +381,7 @@ server <- function(input, output,session) {
       df=as.data.frame(read_excel(input$file_boxplot$datapath))
     }
     else{
-      df <- read.csv(input$file_boxplot$datapath )
+      df = read.csv(input$file_boxplot$datapath )
     }
     return(df)
     
@@ -306,7 +399,7 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_line$datapath )
+      df = read.csv(input$file_line$datapath )
       
     }
     return(as.data.frame(select_if(df, is.numeric)))
@@ -326,7 +419,7 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_summary$datapath )
+      df = read.csv(input$file_summary$datapath )
       
     }
     return(df)
@@ -334,7 +427,39 @@ server <- function(input, output,session) {
   })
   
   #simple
-  data_simple <- reactive({
+  data_simple_train= reactive({
+    
+    req(input$file_simple_train)
+    file_ext= file_ext(input$file_simple_train$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_simple_train$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_simple_train$datapath )
+      
+    }
+    return(df)
+  })
+  data_simple_test= reactive({
+    
+    req(input$file_simple_test)
+    file_ext= file_ext(input$file_simple_test$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_simple_test$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_simple_test$datapath )
+      
+    }
+    return(df)
+  })
+  data_simple = reactive({
     req(input$file_simple)
     file_ext= file_ext(input$file_simple$datapath)
     
@@ -345,13 +470,14 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_simple$datapath )
+      df = read.csv(input$file_simple$datapath )
       
     }
-    return(select_if(df, is.numeric))
+    
+    return(df)
   })
   # Data_multiple
-  data_multiple <- reactive({
+  data_multiple = reactive({
     req(input$file_multi)
     file_ext= file_ext(input$file_multi$datapath)
     
@@ -360,13 +486,13 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_multi$datapath )
+      df = read.csv(input$file_multi$datapath )
       
     }
     return(select_if(df, is.numeric))
   })
   # logistic data
-  data_log <- reactive({
+  data_log = reactive({
     req(input$file_log)
     file_ext= file_ext(input$file_log$datapath)
     
@@ -375,7 +501,7 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_log$datapath )
+      df = read.csv(input$file_log$datapath )
       
     }
     return(df)
@@ -392,10 +518,10 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_knn_train$datapath )
+      df = read.csv(input$file_knn_train$datapath )
       
     }
-    return(as.data.frame(df))
+    return(df)
   })
   data_knn_test= reactive({
     
@@ -408,11 +534,29 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_knn_test$datapath )
+      df = read.csv(input$file_knn_test$datapath )
       
     }
     return(as.data.frame(df))
   })
+  data_knn= reactive({
+    
+    req(input$file_knn)
+    file_ext= file_ext(input$file_knn$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_knn$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_knn$datapath )
+      
+    }
+    #View(df)
+    return(as.data.frame(df))
+  })
+  
   #lda Data
   data_lda_train= reactive({
     
@@ -425,7 +569,7 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_lda_train$datapath )
+      df = read.csv(input$file_lda_train$datapath )
       
     }
     return(as.data.frame(df))
@@ -441,9 +585,26 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_lda_test$datapath )
+      df = read.csv(input$file_lda_test$datapath )
       
     }
+    return(as.data.frame(df))
+  })
+  data_lda= reactive({
+    
+    req(input$file_lda)
+    file_ext= file_ext(input$file_lda$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_lda$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_lda$datapath )
+      
+    }
+    #View(df)
     return(as.data.frame(df))
   })
   #qda Data
@@ -458,7 +619,7 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_qda_train$datapath )
+      df = read.csv(input$file_qda_train$datapath )
       
     }
     return(as.data.frame(df))
@@ -474,9 +635,26 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_qda_test$datapath )
+      df = read.csv(input$file_qda_test$datapath )
       
     }
+    return(as.data.frame(df))
+  })
+  data_qda= reactive({
+    
+    req(input$file_qda)
+    file_ext= file_ext(input$file_qda$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_qda$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_qda$datapath )
+      
+    }
+    #View(df)
     return(as.data.frame(df))
   })
   #nb Data
@@ -491,7 +669,7 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_nb_train$datapath )
+      df = read.csv(input$file_nb_train$datapath )
       
     }
     return(as.data.frame(df))
@@ -507,12 +685,28 @@ server <- function(input, output,session) {
       
     }
     else{
-      df <- read.csv(input$file_nb_test$datapath )
+      df = read.csv(input$file_nb_test$datapath )
       
     }
     return(as.data.frame(df))
   })
-  
+  data_nb= reactive({
+    
+    req(input$file_nb)
+    file_ext= file_ext(input$file_nb$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_nb$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_nb$datapath )
+      
+    }
+   
+    return(as.data.frame(df))
+  })
   
   update_input= function(input_id,label,data){
     return(
@@ -557,8 +751,11 @@ server <- function(input, output,session) {
   
   observe({update_input("summary_var","Select Variable",data_summary)})
   
-  observe({update_input("sd_var_id","Select Dependent Variable",data_simple)})
-  observe({update_input("si_var_id","Select Independent Variable",data_simple)})
+  observe({update_input_numerical("sd_var_id","Select Dependent Variable",data_simple)
+  update_input_numerical("si_var_id","Select Independent Variable",data_simple)})
+  
+  observe({update_input_numerical("simple_response_id","Select Response Variable",data_simple_test)
+    update_input_numerical("simple_pred_id","Select Predictor",data_simple_test)})
   
   observe({
     update_input( "md_var_id","Select Dependent Variable",data_multiple )
@@ -578,19 +775,39 @@ server <- function(input, output,session) {
   
  
   
-  observe({update_input_categorical("knn_response_id","Select Response Variable",data_knn_test)})
-  observe({update_input_numerical("knn_pred_id","Select Predictors",data_knn_test)})
+  observe({update_input_categorical("knn_response_id","Select Response Variable",data_knn_test)
+  update_input_numerical("knn_pred_id","Select Predictors",data_knn_test)})
+  
+  observe({
+  update_input_categorical("knnd_var_id","Select Response Variable",data_knn)
+  update_input_numerical("knni_var_id","Select Predictors",data_knn)
+  })
   
   observe({update_input_categorical("lda_response_id","Select Response Variable",data_lda_test)})
   observe({update_input_numerical("lda_pred_id","Select Predictors",data_lda_test)})
   
+  observe({
+    update_input_categorical("ldad_var_id","Select Response Variable",data_lda)
+    update_input_numerical("ldai_var_id","Select Predictors",data_lda)
+  })
+  
   observe({update_input_categorical("qda_response_id","Select Response Variable",data_qda_test)})
   observe({update_input_numerical("qda_pred_id","Select Predictors",data_qda_test)})
+  
+  observe({
+    update_input_categorical("qdad_var_id","Select Response Variable",data_qda)
+    update_input_numerical("qdai_var_id","Select Predictors",data_qda)
+  })
   
   observe({update_input_categorical("nb_response_id","Select Response Variable",data_nb_test)})
   observe({update_input_numerical("nb_pred_id","Select Predictors",data_nb_test)})
   
-  output$contents <-renderDataTable(data_view())
+  observe({
+    update_input_categorical("nbd_var_id","Select Response Variable",data_nb)
+    update_input_numerical("nbi_var_id","Select Predictors",data_nb)
+  })
+  
+  output$contents =renderDataTable(data_view())
   
   theme=theme(
     plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"),
@@ -602,13 +819,13 @@ server <- function(input, output,session) {
     axis.text = element_text(size = 12, color = "black")
     
   )
-  output$histogram <- renderPlot({
+  output$histogram = renderPlot({
     req(input$hist_var_id)
     x = as.numeric(unlist(data_hist()[,input$hist_var_id]))
     # print(is.numeric(x))
     # print(x)
     
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    bins = seq(min(x), max(x), length.out = input$bins + 1)
     ggplot(data.frame(x), aes(x)) +
       geom_histogram(breaks = bins, color = "black", fill = "blue") +
       labs(x = input$hist_var_id, y = "Frequency") +
@@ -619,7 +836,7 @@ server <- function(input, output,session) {
     # hist(x,xlab=input$hist_var_id, breaks=bins,col="#75AADB",border = "white",main = paste("Histogram of" ,input$hist_var_id))
   }
   )
-  output$scatter <- renderPlot({
+  output$scatter = renderPlot({
     req(input$scatter_var1_id,input$scatter_var2_id)
     
     x = as.numeric(unlist(data_scatter()[,input$scatter_var1_id]))
@@ -634,7 +851,7 @@ server <- function(input, output,session) {
       theme
   }
   )
-  output$barchart <- renderPlot({
+  output$barchart = renderPlot({
     req(input$bar_var1_id,input$bar_var2_id)
     y=data_barchart()[,input$bar_var1_id]
     x=data_barchart()[,input$bar_var2_id]
@@ -649,7 +866,7 @@ server <- function(input, output,session) {
     
   }
   )
-  output$boxplot <- renderPlot({
+  output$boxplot = renderPlot({
     req(input$boxplot_var1_id,input$boxplot_var2_id)
     
     x = data_boxplot()[,input$boxplot_var1_id]
@@ -665,7 +882,7 @@ server <- function(input, output,session) {
     
   }
   )
-  output$lineplot <- renderPlot({
+  output$lineplot = renderPlot({
     req(input$line_var1_id,input$line_var2_id)
     x = data_line()[,input$line_var1_id]
     y=data_line()[,input$line_var2_id]
@@ -680,15 +897,15 @@ server <- function(input, output,session) {
   
   # Calculate summary statistics when button is pressed
   observeEvent(input$calculate, {
-    output$result <- renderPrint({
-      x <- data_summary()[, input$summary_var]
+    output$result = renderPrint({
+      x = data_summary()[, input$summary_var]
       summary(x)
       # summary(data_summary()) # to get summary of all columns of dataset
       
     }) })
   
   # Set up the plot output
-  output$plot_simple <- renderPlot({
+  output$plot_simple = renderPlot({
     # this plot is for whole dataset
     req(input$sd_var_id, input$si_var_id, data_simple())
     
@@ -708,27 +925,57 @@ server <- function(input, output,session) {
     }
     )
   
+  # train_indices = function(size,data){
+  #   return(
+  #   reactive({
+  #   req( size,data())
+  #    # print(size)
+  #   return(
+  #     sample(nrow(data()), round(0.01*(as.numeric(size))* nrow(data())))
+  #   )
+  #   }))}
+  # 
+  # train_data =function(size,data){
+  #   return(
+  #     reactive({
+  # 
+  #   req(data(),size,train_indices(size,data))
+  #       #View(df)
+  #       
+  #   return(data()[train_indices(size,data), ])
+  #     }))}
   
+  # test_data = function(size,data){
+  #   return(
+  #     reactive({
+  #   req(data(),train_indices(size,data),size)
+  #   return(data()[-(train_indices(size,data)), ])
+  # })
+  #   )}
   
-  # Set up the output for simple
-  train_indices_simple <- reactive({
-  req(input$simple_size_s, data_simple())
-  return(sample(nrow(data_simple()), round(0.01*(as.numeric(input$simple_size_s)) * nrow(data_simple()))))
+  #Set up the output for simple
+  
+  train_indices_simple = reactive({
+  req(input$simple_size, data_simple())
+  return(sample(nrow(data_simple()), round(0.01*(as.numeric(input$simple_size)) * nrow(data_simple()))))
   })
-  train_data_simple <- reactive({
-    req(data_simple(),train_indices_simple(),input$simple_size_s)
+  train_data_simple = reactive({
+    req(data_simple(),train_indices_simple(),input$simple_size)
    return(data_simple()[train_indices_simple(), ])
-  
+
   })
-  test_data_simple <-  reactive({
+  test_data_simple =  reactive({
     req(data_simple(),train_indices_simple())
     return(data_simple()[-(train_indices_simple()), ])
   })
   
-  simple_model <-reactive({
+ 
+  
+  simple_model =reactive({
     req(input$sd_var_id, input$si_var_id, data_simple(),train_data_simple())
    # x = as.numeric(unlist(data_simple()[,input$si_var_id]))
    # y = as.numeric(unlist(data_simple()[,input$sd_var_id]))
+   
    x= input$si_var_id
    y=input$sd_var_id
   # Fit a linear regression model
@@ -736,7 +983,7 @@ server <- function(input, output,session) {
   })
   
   # Print the summary of the model and the regression equation
-  output$summary_simple <- renderPrint({
+  output$summary_simple = renderPrint({
     req(simple_model())
     summary(simple_model())
   })
@@ -750,7 +997,7 @@ server <- function(input, output,session) {
   
   #performance of test data
   #mse
-  mse_simple <- reactive({
+  mse_simple = reactive({
     req(simple_model(),test_data_simple(),input$sd_var_id)
     y=input$sd_var_id
   mean(((as.numeric(unlist(test_data_simple()[,y]))) - y_pred_simple())^2)
@@ -764,12 +1011,12 @@ server <- function(input, output,session) {
   output$adjr2_simple=renderText({
     req(simple_model(),test_data_simple(),input$sd_var_id)
     y=input$sd_var_id
-    tss <- sum((as.numeric(unlist(test_data_simple()[,y])) - mean(as.numeric(unlist(test_data_simple()[,y]))))^2)
-    r_squared <- 1 - (mse_simple() / tss)
-    n <- nrow(test_data_simple())
-    p <- length(simple_model()$coefficients) - 1
-    adj_r_squared <- 1 - ((mse_simple() / (n - p - 1)) / (tss / (n - 1)))
-    adj_r_squared =paste("adjusted rsquared  ",round(adj_r_squared,6))
+    tss = sum((as.numeric(unlist(test_data_simple()[,y])) - mean(as.numeric(unlist(test_data_simple()[,y]))))^2)
+    r_squared = 1 - (mse_simple() / tss)
+    n = nrow(test_data_simple())
+    p = length(simple_model()$coefficients) - 1
+    adj_r_squared = 1 - ((mse_simple() / (n - p - 1)) / (tss / (n - 1)))
+    adj_r_squared =paste("adjusted rsquared  ",round(adj_r_squared,5))
     adj_r_squared
     
   })
@@ -778,34 +1025,85 @@ server <- function(input, output,session) {
   return("model's performance on the test data")
   }
   )
+  #simple specific splitting
+  simple.model=reactive({
+    req(input$file_simple_train,input$file_simple_test,input$simple_response_id,input$simple_pred_id)
+    
+    x= input$simple_pred_id
+    y=input$simple_response_id
+    # Fit a linear regression model
+    return(lm(formula = as.formula(paste(y,x, sep = " ~ ")),data=data_simple_train()))
+  })
+  # Print the summary of the model and the regression equation
+  output$summary_simple_ = renderPrint({
+    req(simple.model())
+    summary(simple.model())
+  })
+  #predict 
+  y_pred_simple_=reactive({
+    req(simple.model())
+    predict(simple.model(), newdata = data_simple_test())
+    
+  })
+  #1048
+  #performance of test data
+  #mse
+  mse_simple = reactive({
+    req(simple_model(),test_data_simple(),input$sd_var_id)
+    y=input$sd_var_id
+    mean(((as.numeric(unlist(test_data_simple()[,y]))) - y_pred_simple())^2)
+    
+  })
+  output$mse_simple=renderText({
+    return(paste("mean squared error  ",round(mse_simple(),4)))
+    
+  })
+  #adjusted r2
+  output$adjr2_simple=renderText({
+    req(simple_model(),test_data_simple(),input$sd_var_id)
+    y=input$sd_var_id
+    tss = sum((as.numeric(unlist(test_data_simple()[,y])) - mean(as.numeric(unlist(test_data_simple()[,y]))))^2)
+    r_squared = 1 - (mse_simple() / tss)
+    n = nrow(test_data_simple())
+    p = length(simple_model()$coefficients) - 1
+    adj_r_squared = 1 - ((mse_simple() / (n - p - 1)) / (tss / (n - 1)))
+    adj_r_squared =paste("adjusted rsquared  ",round(adj_r_squared,5))
+    adj_r_squared
+    
+  })
+  output$text_simple=renderText({
+    req(simple_model())
+    return("model's performance on the test data")
+  }
+  )
   
   ## multiple linear regression
   
   
-  output$matrix_plot <- renderPlot({
+  output$matrix_plot = renderPlot({
     req(input$mi_var_id, input$md_var_id)
     ggpairs(data_multiple()[c(input$md_var_id, input$mi_var_id)])
     
   })
-  train_indices_multiple <- reactive({
+  train_indices_multiple = reactive({
     req(input$multiple_size, data_multiple())
     return(sample(nrow(data_multiple()), round(0.01*(as.numeric(input$multiple_size)) * nrow(data_multiple()))))
   })
-  train_data_multiple <- reactive({
+  train_data_multiple = reactive({
     req(data_multiple(),train_indices_multiple(),input$multiple_size)
     return(data_multiple()[train_indices_multiple(), ])
     
   })
-  test_data_multiple <-  reactive({
+  test_data_multiple =  reactive({
     req(data_multiple(),train_indices_multiple())
     return(data_multiple()[-(train_indices_multiple()), ])
   })
-  multiple_model <-reactive({
+  multiple_model =reactive({
     req(input$md_var_id, input$mi_var_id)
     lm(formula = as.formula(paste(input$md_var_id, paste(input$mi_var_id, collapse = " + "), sep = " ~ ")), data = train_data_multiple())
   })
   
-  output$summary_multi <- renderPrint({
+  output$summary_multi = renderPrint({
     req(multiple_model())
     summary(multiple_model())
    
@@ -824,7 +1122,7 @@ server <- function(input, output,session) {
   })
   #performance of test dataset
      #mse
-  output$mse_multiple <- renderText({
+  output$mse_multiple = renderText({
     
     return(paste("mean squared error ",round(mse_multiple(),4)))
    
@@ -833,12 +1131,12 @@ server <- function(input, output,session) {
   output$adjr2_multiple=renderText({
     req(input$md_var_id,multiple_model(),mse_multiple())
     y=input$md_var_id
-    tss <- sum((test_data_multiple()[,y] - mean(test_data_multiple()[,y]))^2)
-    r_squared <- 1 - (mse_multiple() / tss)
-    n <- nrow(test_data_multiple())
-    p <- length(multiple_model()$coefficients) - 1
-    adj_r_squared <- 1 - ((mse_multiple() / (n - p - 1)) / (tss / (n - 1)))
-    adj_r_squared =paste("adjusted rsquared  ",round(adj_r_squared,6))
+    tss = sum((as.numeric(unlist(test_data_multiple()[,y])) - mean(as.numeric(unlist(test_data_multiple()[,y]))))^2)
+    r_squared = 1 - (mse_multiple() / tss)
+    n = nrow(test_data_multiple())
+    p = length(multiple_model()$coefficients) - 1
+    adj_r_squared = 1 - ((mse_multiple() / (n - p - 1)) / (tss / (n - 1)))
+    adj_r_squared =paste("adjusted rsquared  ",round(adj_r_squared,5))
     adj_r_squared
     
   })
@@ -848,39 +1146,33 @@ server <- function(input, output,session) {
     return("model's performance on the test data")
   }
   )
-  ## logistic classification
- 
-  
-  # output$plot_logistic <- renderPlot({
-  #   req(input$li_var_id, input$ld_var_id)
-  #   #pairs(data_log()[c(input$ld_var_id, input$li_var_id)])
-  # })
-  train_indices_logistic <- reactive({
+  # logistic classification
+  train_indices_logistic = reactive({
     req(input$logistic_size, data_log())
     return(sample(nrow(data_log()), round(0.01*(as.numeric(input$logistic_size)) * nrow(data_log()))))
   })
-  train_data_logistic <- reactive({
+  train_data_logistic = reactive({
     req(data_log(),train_indices_logistic(),input$logistic_size)
     return(data_log()[train_indices_logistic(), ])
     
   })
-  test_data_logistic <-  reactive({
+  test_data_logistic =  reactive({
     req(data_log(),train_indices_logistic())
     return(data_log()[-(train_indices_logistic()), ])
   })
-  logistic.model=reactive({
+  logistic_model=reactive({
     req(input$li_var_id, input$ld_var_id,input$logistic_size)
     glm(formula = as.formula(paste(input$ld_var_id, paste(input$li_var_id, collapse = " + "), sep = " ~ ")), data = train_data_logistic(),family = "binomial") 
     
   })
-  output$summary_logistic <- renderPrint({
-    req(logistic.model())
-    summary(logistic.model())
+  output$summary_logistic = renderPrint({
+    req(logistic_model())
+    summary(logistic_model())
   })
   #predict 
   predict_logistic=reactive({
-    req(logistic.model())
-    predicted_prob=predict(logistic.model(), newdata = test_data_logistic(),type="response")
+    req(logistic_model())
+    predicted_prob=predict(logistic_model(), newdata = test_data_logistic(),type="response")
     predicted_classes=ifelse(predicted_prob > 0.5, 1, 0)
     predicted_classes
   })
@@ -888,21 +1180,62 @@ server <- function(input, output,session) {
   output$logisticAccuracy=renderText({
     req(test_data_logistic())
     # Get the accuracy of model
-    accuracy <- paste("Accuracy of logistic model is",round(mean(predict_logistic() == test_data_logistic()[,input$ld_var_id])*100,2),"%")
+    accuracy = paste("Accuracy of logistic model is",round(mean(predict_logistic() == test_data_logistic()[,input$ld_var_id])*100,2),"%")
     accuracy
   })
   output$logisticCM=renderPrint({
     req(test_data_logistic(),input$ld_var_id)
     # Get the confusion matrix
-    confusion <- table( actual=as.numeric(unlist(test_data_logistic()[,input$ld_var_id])),predicted=predict_logistic())
+    confusion = table( actual=as.numeric(unlist(test_data_logistic()[,input$ld_var_id])),predicted=predict_logistic())
     confusion
   })
   output$text_logistic=renderText({
-    req(logistic.model())
+    req(logistic_model())
     return("model's performance on the test data")
   }
   )
-  #KNN
+ 
+  #KNN Random splitting
+  # train_indices_knn=train_indices(input$knn_size,data_knn)
+  # train_data_knn =train_data(input$knn_size,data_knn)
+  # test_data_knn=test_data(input$knn_size,data_knn)
+
+  train_indices_knn = reactive({
+    req(input$knn_size,data_knn())
+    z=sample(nrow(data_knn()), round(0.01*(as.numeric(input$knn_size)) * nrow(data_knn())))
+    return(z)
+  })
+  train_data_knn = reactive({
+    req(data_knn(),train_indices_knn(),input$knn_size)
+    return(data_knn()[train_indices_knn(), ])
+
+  })
+  test_data_knn =  reactive({
+    req(data_knn(),train_indices_knn())
+    return(data_knn()[-(train_indices_knn()), ])
+  })
+  knn_model=reactive({
+    req(input$file_knn,input$k_,input$knnd_var_id,input$knni_var_id)
+    knn_model = knn(train =as.data.frame(scale(train_data_knn()[,input$knni_var_id])), test = as.data.frame(scale(test_data_knn()[,input$knni_var_id])), cl = train_data_knn()[,input$knnd_var_id], k = input$k_)
+    
+    return(knn_model)
+    
+  })
+  output$knn_accuracy=renderText({
+   req(test_data_knn(),input$knnd_var_id)
+    # Get the accuracy of model
+    accuracy = paste("Accuracy of KNN model with k=",input$k_," is",round(mean(knn_model() == test_data_knn()[,input$knnd_var_id])*100,2),"%")
+    #print(accuracy)
+    return(accuracy)
+  })
+  output$knn_cm=renderPrint({
+    req(test_data_knn(),input$knnd_var_id,knn_model())
+    # Get the confusion matrix
+    confusion = table( actual=test_data_knn()[,input$knnd_var_id],predicted=knn_model())
+    return(confusion)
+  })
+  
+  #KNN specific splitting
   knn.model=reactive({
     req(input$file_knn_train,input$file_knn_test,input$k,input$knn_response_id,input$knn_pred_id)
     train.data=(data_knn_train())
@@ -911,93 +1244,205 @@ server <- function(input, output,session) {
     # View(data_knn_train())
     
     # Fit a KNN model with k
-    knn.model <- knn(train =as.data.frame(scale(train.data[,input$knn_pred_id])), test = as.data.frame(scale(test.data[,input$knn_pred_id])), cl = train.data[,input$knn_response_id], k = input$k)
+    knn.model = knn(train =as.data.frame(scale(train.data[,input$knn_pred_id])), test = as.data.frame(scale(test.data[,input$knn_pred_id])), cl = train.data[,input$knn_response_id], k = input$k)
     return(knn.model)
   })
   output$knnAccuracy=renderText({
     req(data_knn_test(),input$knn_response_id)
     # Get the accuracy of model
-    accuracy <- paste("Accuracy of KNN model with k=",input$k," is",round(mean(knn.model() == data_knn_test()[,input$knn_response_id])*100,2),"%")
+    accuracy = paste("Accuracy of KNN model with k=",input$k," is",round(mean(knn.model() == data_knn_test()[,input$knn_response_id])*100,2),"%")
     accuracy
   })
   output$knnCM=renderPrint({
     req(data_knn_test(),input$knn_response_id,knn.model())
     # Get the confusion matrix
-    confusion <- table( actual=data_knn_test()[,input$knn_response_id],predicted=knn.model())
+    confusion = table( actual=data_knn_test()[,input$knn_response_id],predicted=knn.model())
     confusion
   })
-  
-  #LDA
+  #LDA random splitting
+  train_indices_lda = reactive({
+    req(input$lda_size,data_lda())
+    z=sample(nrow(data_lda()), round(0.01*(as.numeric(input$lda_size)) * nrow(data_lda())))
+    return(z)
+  })
+  train_data_lda = reactive({
+    req(data_lda(),train_indices_lda(),input$lda_size)
+    return(data_lda()[train_indices_lda(), ])
+    
+  })
+  test_data_lda =  reactive({
+    req(data_lda(),train_indices_lda())
+    return(data_lda()[-(train_indices_lda()), ])
+  })
+  lda_predict= reactive({
+    req(input$file_lda,input$ldad_var_id,length(input$ldai_var_id)>=2)
+    # Fit a LDA model
+    lda_model = lda(formula = as.formula(paste(input$ldad_var_id, paste(input$ldai_var_id, collapse = " + "), sep = " ~ ")), data =train_data_lda() )
+    # predict the class labels for the test data
+    lda_predict = predict(lda_model, newdata = as.data.frame(test_data_lda()[,input$ldai_var_id]))
+    return(lda_predict)
+  })
+  output$lda_accuracy=renderText({
+    req(test_data_lda(),input$ldad_var_id)
+    # Get the accuracy of model
+    accuracy = paste("Accuracy of LDA model is ",round(mean(lda_predict()$class == test_data_lda()[,input$ldad_var_id])*100,2),"%")
+    accuracy
+    
+  })
+  # Get the confusion matrix
+  output$lda_cm=renderPrint({
+    req(test_data_lda(),input$ldad_var_id)
+    confusion = table( actual=test_data_lda()[,input$ldad_var_id],predicted=lda_predict()$class)
+    confusion
+  })
+  #LDA specific splitting
   lda.predict= reactive({
     req(input$file_lda_train,input$file_lda_test,input$lda_response_id,length(input$lda_pred_id)>=2)
     train.data=data_lda_train()
     test.data=data_lda_test()
     # Fit a LDA model
-    lda.model <- lda(formula = as.formula(paste(input$lda_response_id, paste(input$lda_pred_id, collapse = " + "), sep = " ~ ")), data =train.data )
+    lda.model = lda(formula = as.formula(paste(input$lda_response_id, paste(input$lda_pred_id, collapse = " + "), sep = " ~ ")), data =train.data )
     # predict the class labels for the test data
-    lda.predict <- predict(lda.model, newdata = as.data.frame(test.data[,input$lda_pred_id]))
+    lda.predict = predict(lda.model, newdata = as.data.frame(test.data[,input$lda_pred_id]))
     return(lda.predict)
   })
   output$ldaAccuracy=renderText({
     req(data_lda_test(),input$lda_response_id)
     # Get the accuracy of model
-    accuracy <- paste("Accuracy of LDA model is ",round(mean(lda.predict()$class == data_lda_test()[,input$lda_response_id])*100,2),"%")
+    accuracy = paste("Accuracy of LDA model is ",round(mean(lda.predict()$class == data_lda_test()[,input$lda_response_id])*100,2),"%")
     accuracy
     
   })
   # Get the confusion matrix
   output$ldaCM=renderPrint({
     req(data_lda_test(),input$lda_response_id)
-    confusion <- table( actual=data_lda_test()[,input$lda_response_id],predicted=lda.predict()$class)
+    confusion = table( actual=data_lda_test()[,input$lda_response_id],predicted=lda.predict()$class)
     confusion
   })
   #QDA
+  #QDA random splitting
+  train_indices_qda = reactive({
+    req(input$qda_size,data_qda())
+    z=sample(nrow(data_qda()), round(0.01*(as.numeric(input$qda_size)) * nrow(data_qda())))
+    return(z)
+  })
+  train_data_qda = reactive({
+    req(data_qda(),train_indices_qda(),input$qda_size)
+    return(data_qda()[train_indices_qda(), ])
+    
+  })
+  test_data_qda =  reactive({
+    req(data_qda(),train_indices_qda())
+    return(data_qda()[-(train_indices_qda()), ])
+  })
+  qda_predict= reactive({
+    req(input$file_qda,input$qdad_var_id,length(input$qdai_var_id)>=2)
+    # Fit a QDA model
+    qda_model = qda(formula = as.formula(paste(input$qdad_var_id, paste(input$qdai_var_id, collapse = " + "), sep = " ~ ")), data =train_data_qda() )
+    # predict the class labels for the test data
+    qda_predict = predict(qda_model, newdata = as.data.frame(test_data_qda()[,input$qdai_var_id]))
+    return(qda_predict)
+  })
+  output$qda_accuracy=renderText({
+    req(data_qda(),test_data_qda(),qda_predict(),input$qdad_var_id,input$qdai_var_id)
+    # Get the accuracy of model
+    accuracy = paste("Accuracy of QDA model is ",round(mean(qda_predict()$class == test_data_qda()[,input$qdad_var_id])*100,2),"%")
+    accuracy
+    
+  })
+  # Get the confusion matrix
+  output$qda_cm=renderPrint({
+    req(test_data_qda(),input$qdad_var_id,qda_predict())
+    confusion = table( actual=test_data_qda()[,input$qdad_var_id],predicted=qda_predict()$class)
+    confusion
+  })
+  # QDA specific splitting
   qda.predict= reactive({
     req(input$file_qda_train,input$file_qda_test,input$qda_response_id,length(input$qda_pred_id)>=2)
     train.data=data_qda_train()
     test.data=data_qda_test()
     # Fit a QDA model
-    qda.model <- qda(formula = as.formula(paste(input$qda_response_id, paste(input$qda_pred_id, collapse = " + "), sep = " ~ ")), data =train.data )
+    qda.model = qda(formula = as.formula(paste(input$qda_response_id, paste(input$qda_pred_id, collapse = " + "), sep = " ~ ")), data =train.data )
     # predict the class labels for the test data
-    qda.predict <- predict(qda.model, newdata = as.data.frame(test.data[,input$qda_pred_id]))
+    qda.predict = predict(qda.model, newdata = as.data.frame(test.data[,input$qda_pred_id]))
     return(qda.predict)
   })
   output$qdaAccuracy=renderText({
     req(data_qda_test(),input$qda_response_id)
     # Get the accuracy of model
-    accuracy <- paste("Accuracy of QDA model is ",round(mean(qda.predict()$class == data_qda_test()[,input$qda_response_id])*100,2),"%")
+    accuracy = paste("Accuracy of QDA model is ",round(mean(qda.predict()$class == data_qda_test()[,input$qda_response_id])*100,2),"%")
     accuracy
     
   })
   # Get the confusion matrix
   output$qdaCM=renderPrint({
     req(data_qda_test(),input$qda_response_id)
-    confusion <- table( actual=data_qda_test()[,input$qda_response_id],predicted=qda.predict()$class)
+    confusion = table( actual=data_qda_test()[,input$qda_response_id],predicted=qda.predict()$class)
     confusion
   })
   
   #NB
+  #NB random splitting
+  train_indices_nb = reactive({
+    req(input$nb_size,data_nb())
+    z=sample(nrow(data_nb()), round(0.01*(as.numeric(input$nb_size)) * nrow(data_nb())))
+    return(z)
+  })
+  train_data_nb = reactive({
+    req(data_nb(),train_indices_nb(),input$nb_size)
+    return(data_nb()[train_indices_nb(), ])
+    
+  })
+  test_data_nb =  reactive({
+    req(data_nb(),train_indices_nb())
+    return(data_nb()[-(train_indices_nb()), ])
+  })
+  nb_predict= reactive({
+    req(input$file_nb,input$nbd_var_id,length(input$nbi_var_id)>=2)
+    # Fit a NB model
+    nb_model = naiveBayes(formula = as.formula(paste(input$nbd_var_id, paste(input$nbi_var_id, collapse = " + "), sep = " ~ ")), data =train_data_nb() )
+    # predict the class labels for the test data
+    nb_predict = predict(nb_model, newdata = as.data.frame(test_data_nb()[,input$nbi_var_id]))
+    return(nb_predict)
+  })
+  output$nb_accuracy=renderText({
+    req(test_data_nb(),input$nbd_var_id)
+    # Get the accuracy of model
+    accuracy = paste("Accuracy of Naive Bayes model is ",round(mean(nb_predict() == test_data_nb()[,input$nbd_var_id])*100,2),"%")
+    accuracy
+    
+  })
+  # Get the confusion matrix
+  output$nb_cm=renderPrint({
+    req(test_data_nb(),input$nbd_var_id)
+    confusion = table( actual=test_data_nb()[,input$nbd_var_id],predicted=nb_predict())
+    confusion
+  })
+  
+
+
+  #NB specific splitting
   nb.predict= reactive({
     req(input$file_nb_train,input$file_nb_test,input$nb_response_id,length(input$nb_pred_id)>=2)
     train.data=data_nb_train()
     test.data=data_nb_test()
     # Fit a NB model
-    nb.model <- naiveBayes(formula = as.formula(paste(input$nb_response_id, paste(input$nb_pred_id, collapse = " + "), sep = " ~ ")), data =train.data )
+    nb.model = naiveBayes(formula = as.formula(paste(input$nb_response_id, paste(input$nb_pred_id, collapse = " + "), sep = " ~ ")), data =train.data )
     # predict the class labels for the test data
-    nb.predict <- predict(nb.model, newdata = as.data.frame(test.data[,input$nb_pred_id]))
+    nb.predict = predict(nb.model, newdata = as.data.frame(test.data[,input$nb_pred_id]))
     return(nb.predict)
   })
   output$nbAccuracy=renderText({
     req(data_nb_test(),input$nb_response_id)
     # Get the accuracy of model
-    accuracy <- paste("Accuracy of Naive Bayes model is ",round(mean(nb.predict() == data_nb_test()[,input$nb_response_id])*100,2),"%")
+    accuracy = paste("Accuracy of Naive Bayes model is ",round(mean(nb.predict() == data_nb_test()[,input$nb_response_id])*100,2),"%")
     accuracy
     
   })
   # Get the confusion matrix
   output$nbCM=renderPrint({
     req(data_nb_test(),input$nb_response_id)
-    confusion <- table( actual=data_nb_test()[,input$nb_response_id],predicted=nb.predict())
+    confusion = table( actual=data_nb_test()[,input$nb_response_id],predicted=nb.predict())
     confusion
   })
   
