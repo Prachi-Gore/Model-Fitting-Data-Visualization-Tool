@@ -1,5 +1,5 @@
                                                             Shiny Dashboard 
-## MODEL MONITORING TOOL made with shiny 
+## MODEL FITTING & DATA VISUALIZATION TOOL made with shiny 
 
 <p>This website is for those people who want to visualize dataset, fit the model but don't know any programming language <p>
 <p>MMT is TOOL with following feature's. <p>
@@ -19,7 +19,7 @@
  <li>ShinyDashboard</li>
  </ul>
  
-<h3>Do you want to Fit the model ? visualize dataset ? Here is the <a href="https://prachigore29.shinyapps.io/Finance_Calculator/">TOOL</a></h3>
+<h3>Do you want to Fit the model ? visualize dataset ? Here is the <a href="https://prachigore29.shinyapps.io/DataVisualizationAndModelFittingTool/">TOOL</a></h3>
 <p>Don't forget to ⭐ if you found it helpful and informative, This motivates 🚀🚀 me to add more feature's</p>
 
 <h3>Thank You !</h3>
