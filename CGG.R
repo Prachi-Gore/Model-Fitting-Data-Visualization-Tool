@@ -18,7 +18,7 @@ library(caret)#confusionMatrix #not used
 
 
 header = dashboardHeader(
-  title = "Model Monitoring Tool",
+  title = "Model Fitting Tool",
   #dropdownMenuOutput("messageMenu")
   tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/sopan-patil-24a995210",icon("linkedin"),"Sopan Patil",target="_blank")),
   tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/samiya-pathan-3a784b240",icon("linkedin"),"Samiya Pathan",target="_blank")),
