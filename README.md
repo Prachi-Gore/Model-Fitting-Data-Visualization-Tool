@@ -1,5 +1,5 @@
                                                             Shiny Dashboard 
-## MODEL FITTING & DATA VISUALIZATION TOOL made with shiny 
+## MODEL FITTING & DATA VISUALIZATION TOOL made with R Shiny 
 
 <p align="center">
   <a href="https://prachigore29.shinyapps.io/DataVisualizationAndModelFittingTool/">
@@ -8,7 +8,7 @@
 </p>  
 
 <p>This website is for those people who want to visualize dataset, fit the model but don't know any programming language <p>
-<p>MMT is TOOL with following feature's. <p>
+<p>MFDVT is TOOL with following feature's. <p>
 <h3>User can...</h3>
  <ul>
  <li>Preview Dataset</li>
