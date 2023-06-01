@@ -3,7 +3,7 @@
 
 <p align="center">
   <a href="https://prachigore29.shinyapps.io/DataVisualizationAndModelFittingTool/">
-    <img src="page.jpg" />
+    <img src="page.png" />
   </a>
 </p>  
 
