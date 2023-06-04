@@ -18,11 +18,17 @@ library(caret)#confusionMatrix #not used
 
 
 header = dashboardHeader(
-  title = "Model Fitting Tool",
-  #dropdownMenuOutput("messageMenu")
-  tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/sopan-patil-24a995210",icon("linkedin"),"Sopan Patil",target="_blank")),
-  tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/samiya-pathan-3a784b240",icon("linkedin"),"Samiya Pathan",target="_blank")),
-  tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/prachi-gore-4772a11a5",icon("linkedin"),"Prachi Gore",target="_blank"))
+  
+  title = ("Model Fitting Tool"),
+                tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/sopan-patil-24a995210",icon("linkedin"),"Sopan Patil",target="_blank")),
+                tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/samiya-pathan-3a784b240",icon("linkedin"),"Samiya Pathan",target="_blank")),
+                tags$li(class="dropdown",tags$a(href="https://www.linkedin.com/in/prachi-gore-4772a11a5",icon("linkedin"),"Prachi Gore",target="_blank")),
+                tags$li(class="dropdown",tags$a(href="https://prachi-gore-portfolio.netlify.app/",icon("file"),"Portfolio",target="_blank"))
+  
+
+  
+ 
+  
 )
 sidebar = dashboardSidebar(
   sidebarMenu(
@@ -98,24 +104,34 @@ line_layout=sidebarPanel(file_input("file_line"),select_input("line_var1_id","Se
 summary_layout=sidebarPanel(file_input("file_summary"),select_input("summary_var", "Select a variable"),actionButton("calculate", "Calculate"))
 
 simple_layout=sidebarPanel(file_input("file_simple"),select_input("sd_var_id", "Select Response Variable"),
-                           select_input("si_var_id", "Select Predictors"),numericInput("simple_size", label = "Enter a size of train dataset in %:", value = 80,min=10,max=100))
+                           select_input("si_var_id", "Select Predictors"),numericInput("simple_size", label = "Enter a size of train dataset in %:", value = 80,step=10,min=10,max=100))
 simple_layout_=sidebarPanel(file_input_model("file_simple_train","Upload Train Dataset"),file_input_model("file_simple_test","Upload Test Dataset"),select_input("simple_response_id","Select Response Variable"),
                             select_input("simple_pred_id", "Select Predictors"))
  model_layout=function(fileId,depVarId,indVarId,sizeId){
    return(sidebarPanel(file_input(fileId),
                        select_input(depVarId, "Select dependent variable"),
                       selectInput(indVarId, "Select independent variables", choices = NULL,multiple = TRUE),
-                      numericInput(sizeId, label = "Enter a size of train dataset in %:", value = 80,min=10,max=100))
+                      numericInput(sizeId, label = "Enter a size of train dataset in %:", value = 80,step=10,min=10,max=100))
          )}
+ model_layout_=function(fileId1,fileId2,depVarId,indVarId){
+   return(sidebarPanel(file_input_model(fileId1,"Upload Train Dataset"),file_input_model(fileId2,"Upload Test Dataset"),
+                       select_input(depVarId, "Select Response variable"),
+                       selectInput(indVarId, "Select Predictor variables", choices = NULL,multiple = TRUE)
+                       )
+   )}
+ 
+multiple_layout=model_layout(fileId = "file_multiple",depVarId = "md_var_id",indVarId = "mi_var_id",sizeId = "multiple_size")
+multiple_layout_=model_layout_(fileId1 = "file_multiple_train",fileId2 = "file_multiple_test",depVarId = "multiple_response_id",indVarId = "multiple_pred_id")
 
-multi_layout=model_layout(fileId = "file_multi",depVarId = "md_var_id",indVarId = "mi_var_id",sizeId = "multiple_size")
 
 
+# logistic_layout=sidebarPanel(file_input("file_logistic"),select_input("logd_var_id", "Select Response variable"),
+#                                       selectInput("logi_var_id", "Select Predictors", choices = NULL,multiple = TRUE),
+#                         numericInput("logistic_size", label = "Enter a size of train dataset in %:", value = 80,min=10,max=100))
 
+logistic_layout=model_layout(fileId = "file_logistic",depVarId = "logd_var_id",indVarId = "logi_var_id",sizeId = "logistic_size")
+logistic_layout_=model_layout_(fileId1 = "file_logistic_train",fileId2 = "file_logistic_test",depVarId = "logistic_response_id",indVarId = "logistic_pred_id")
 
-log_layout=sidebarPanel(file_input("file_log"),select_input("ld_var_id", "Select Response variable"),
-                                      selectInput("li_var_id", "Select Predictors", choices = NULL,multiple = TRUE),
-                        numericInput("logistic_size", label = "Enter a size of train dataset in %:", value = 80,min=10,max=100))
 
 knn_layout=sidebarPanel(file_input_model("file_knn_train","Upload Train Dataset"),file_input_model("file_knn_test","Upload Test Dataset"),select_input("knn_response_id","Select Response Variable"),
                         selectInput("knn_pred_id", "Select Predictors", choices = NULL,multiple = TRUE),numericInput(inputId = "k", label = "Enter a K:", value = "",min=1))
@@ -143,8 +159,17 @@ line_ui=fluidPage(title="line-chart",sidebarLayout(line_layout,mainPanel (plotOu
 summary_ui=fluidPage(title="",sidebarLayout(summary_layout,mainPanel(verbatimTextOutput("result"))))
 
 simple_ui=fluidPage(
+  tags$head(
+    tags$style(HTML("
+      .horizontal-radio .form-group div.radio {
+        display: inline-block;
+        margin-right: 10px;
+      }
+    "))
+  ),
+  div(class = "horizontal-radio",
   radioButtons("option_simple", label = "",
-               choices = c("Specific splitting","Random splitting")),
+               choices = c("Specific splitting","Random splitting"))),
   conditionalPanel(
   condition = "input.option_simple == 'Specific splitting'",
   title="Simple Regression",
@@ -160,17 +185,68 @@ simple_ui=fluidPage(
   )
 )
 
-multi_ui=fluidPage(
+multiple_ui=fluidPage(
+  tags$head(
+    tags$style(HTML("
+      .horizontal-radio .form-group div.radio {
+        display: inline-block;
+        margin-right: 10px;
+      }
+    "))
+  ),
+  div(class = "horizontal-radio",
+  radioButtons("option_multiple", label = "",
+               choices = c("Specific splitting","Random splitting"))),
+  conditionalPanel(
+    condition = "input.option_multiple == 'Specific splitting'",
+  title="Multiple Regression",
+  sidebarLayout(multiple_layout_,mainPanel(h3(textOutput("text_multiple_")),h4(textOutput("mse_multiple_")),h4(textOutput("adjr2_multiple_")),plotOutput("matrix_plot_"),
+                                                                                    verbatimTextOutput("summary_multiple_")))),
+  conditionalPanel(
+    condition = "input.option_multiple == 'Random splitting'",
+    title="Multiple Regression",
+    sidebarLayout(multiple_layout,mainPanel(h3(textOutput("text_multiple")),h4(textOutput("mse_multiple")),h4(textOutput("adjr2_multiple")),plotOutput("matrix_plot"),
+                                                                      verbatimTextOutput("summary_multiple"))))
   
-  title="Multiple Regression",sidebarLayout(multi_layout,mainPanel(h3(textOutput("text_multiple")),h4(textOutput("mse_multiple")),h4(textOutput("adjr2_multiple")),plotOutput("matrix_plot"),
-                                                                                    verbatimTextOutput("summary_multi"))))
+  )
 
-log_ui=fluidPage(title="Logistic Classification",sidebarLayout(log_layout,mainPanel(h3(textOutput("text_logistic")),h4(textOutput("logisticAccuracy")),
-                                                                                    verbatimTextOutput("logisticCM"),verbatimTextOutput("summary_logistic"))))
+logistic_ui=fluidPage(
+  tags$head(
+    tags$style(HTML("
+      .horizontal-radio .form-group div.radio {
+        display: inline-block;
+        margin-right: 10px;
+      }
+    "))
+  ),
+  div(class = "horizontal-radio",
+  radioButtons("option_logistic", label = "",
+               choices = c("Specific splitting","Random splitting"))),
+  conditionalPanel(
+    condition = "input.option_logistic == 'Specific splitting'",
+    title="Logistic Classification",
+    sidebarLayout(logistic_layout_,mainPanel(h3(textOutput("textLogistic")),h4(textOutput("logisticAccuracy")),verbatimTextOutput("logisticCM")))
+                                             # ,verbatimTextOutput("summaryLogistic")
+  ),
+  conditionalPanel(
+    condition = "input.option_logistic == 'Random splitting'",
+     title="Logistic Classification",
+     sidebarLayout(logistic_layout,mainPanel(h3(textOutput("text_logistic")),h4(textOutput("logistic_accuracy")),verbatimTextOutput("logistic_cm")))
+                                            # ,verbatimTextOutput("summary_logistic")
+  ))
 
 knn_ui = fluidPage(
+  tags$head(
+    tags$style(HTML("
+      .horizontal-radio .form-group div.radio {
+        display: inline-block;
+        margin-right: 10px;
+      }
+    "))
+  ),
+  div(class = "horizontal-radio",
   radioButtons("option_knn", label = "",
-               choices = c("Specific splitting", "Random splitting")),
+               choices = c("Specific splitting", "Random splitting"))),
   conditionalPanel(
     condition = "input.option_knn == 'Specific splitting'",
     title="K Nearest Neighbours",
@@ -194,8 +270,17 @@ knn_ui = fluidPage(
 )
 )
 lda_ui = fluidPage(
+  tags$head(
+    tags$style(HTML("
+      .horizontal-radio .form-group div.radio {
+        display: inline-block;
+        margin-right: 10px;
+      }
+    "))
+  ),
+  div(class = "horizontal-radio",
   radioButtons("option_lda", label = "",
-               choices = c("Specific splitting", "Random splitting")),
+               choices = c("Specific splitting", "Random splitting"))),
   conditionalPanel(
     condition = "input.option_lda == 'Specific splitting'",
     title="Linear Discriminant Analysis",
@@ -215,8 +300,17 @@ lda_ui = fluidPage(
 )
 
 qda_ui=fluidPage(
+  tags$head(
+    tags$style(HTML("
+      .horizontal-radio .form-group div.radio {
+        display: inline-block;
+        margin-right: 10px;
+      }
+    "))
+  ),
+  div(class = "horizontal-radio",
   radioButtons("option_qda", label = "",
-               choices = c("Specific splitting", "Random splitting")),
+               choices = c("Specific splitting", "Random splitting"))),
   conditionalPanel(
     condition = "input.option_qda == 'Specific splitting'",
   title="Quadratic Discriminant Analysis",
@@ -235,17 +329,19 @@ conditionalPanel(
   )
 )
 )
-# nb_ui=fluidPage(
-#   title="Naive Bayes",
-#   #titlePanel(h3("Data Visualization")),
-#   sidebarLayout(
-#     nb_layout,
-#     mainPanel (h3(textOutput("nbAccuracy")),verbatimTextOutput("nbCM"))
-#   )
-# )
+
 nb_ui=fluidPage(
+  tags$head(
+    tags$style(HTML("
+      .horizontal-radio .form-group div.radio {
+        display: inline-block;
+        margin-right: 10px;
+      }
+    "))
+  ),
+  div(class = "horizontal-radio",
   radioButtons("option_nb", label = "",
-               choices = c("Specific splitting", "Random splitting")),
+               choices = c("Specific splitting", "Random splitting"))),
   conditionalPanel(
     condition = "input.option_nb == 'Specific splitting'",
     title="Naive Bayes",
@@ -277,8 +373,8 @@ body = dashboardBody(
     tabItem("Line-Chart",line_ui),
     tabItem("SS",summary_ui),
     tabItem("Simple",simple_ui),
-    tabItem("Multiple",multi_ui),
-    tabItem("Logistic",log_ui),
+    tabItem("Multiple",multiple_ui),
+    tabItem("Logistic",logistic_ui),
     tabItem("KNN",knn_ui),
     tabItem("LDA",lda_ui),
     tabItem("QDA",qda_ui),
@@ -286,6 +382,7 @@ body = dashboardBody(
   )
 )
 ui = dashboardPage(
+  
   header,
   sidebar,
   body,
@@ -293,7 +390,8 @@ ui = dashboardPage(
 )
 
 server = function(input, output,session) {
-  
+ 
+    
   data_view= reactive({
     
     req(input$file_view)
@@ -477,31 +575,96 @@ server = function(input, output,session) {
     return(df)
   })
   # Data_multiple
-  data_multiple = reactive({
-    req(input$file_multi)
-    file_ext= file_ext(input$file_multi$datapath)
+  data_multiple_train= reactive({
     
-    if(file_ext=="xlsx"|file_ext=="xls"){
-      df=read_excel(input$file_multi$datapath)
+    req(input$file_multiple_train)
+    file_ext= file_ext(input$file_multiple_train$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_multiple_train$datapath)
       
     }
     else{
-      df = read.csv(input$file_multi$datapath )
+      df = read.csv(input$file_multiple_train$datapath )
       
     }
-    return(select_if(df, is.numeric))
+    return(df)
   })
-  # logistic data
-  data_log = reactive({
-    req(input$file_log)
-    file_ext= file_ext(input$file_log$datapath)
+  data_multiple_test= reactive({
     
-    if(file_ext=="xlsx"|file_ext=="xls"){
-      df=read_excel(input$file_log$datapath)
+    req(input$file_multiple_test)
+    file_ext= file_ext(input$file_multiple_test$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_multiple_test$datapath)
       
     }
     else{
-      df = read.csv(input$file_log$datapath )
+      df = read.csv(input$file_multiple_test$datapath )
+      
+    }
+    return(df)
+  })
+  data_multiple = reactive({
+    req(input$file_multiple)
+    file_ext= file_ext(input$file_multiple$datapath)
+    
+    if(file_ext=="xlsx"|file_ext=="xls"){
+      df=read_excel(input$file_multiple$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_multiple$datapath )
+      
+    }
+    return(df)
+  })
+  
+  # logistic data
+  data_logistic_train= reactive({
+    
+    req(input$file_logistic_train)
+    file_ext= file_ext(input$file_logistic_train$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_logistic_train$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_logistic_train$datapath )
+      
+    }
+    return(df)
+  })
+  data_logistic_test= reactive({
+    
+    req(input$file_logistic_test)
+    file_ext= file_ext(input$file_logistic_test$datapath)
+    
+    
+    if(file_ext=="xlsx"||file_ext=="xls"){
+      df=read_excel(input$file_logistic_test$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_logistic_test$datapath )
+      
+    }
+    return(df)
+  })
+  data_logistic = reactive({
+    req(input$file_logistic)
+    file_ext= file_ext(input$file_logistic$datapath)
+    
+    if(file_ext=="xlsx"|file_ext=="xls"){
+      df=read_excel(input$file_logistic$datapath)
+      
+    }
+    else{
+      df = read.csv(input$file_logistic$datapath )
       
     }
     return(df)
@@ -758,20 +921,37 @@ server = function(input, output,session) {
     update_input_numerical("simple_pred_id","Select Predictor",data_simple_test)})
   
   observe({
-    update_input( "md_var_id","Select Dependent Variable",data_multiple )
-    update_input("mi_var_id","Select Independent Variable",data_multiple )
+    update_input_numerical( "md_var_id","Select Dependent Variable",data_multiple )
+    update_input_numerical("mi_var_id","Select Independent Variable",data_multiple )
   })
+  observe({
+    update_input_numerical("multiple_response_id","Select Response Variable",data_multiple_test)
+    update_input_numerical("multiple_pred_id","Select Predictor Variables",data_multiple_test)
+    })
   
+  #logistic random splitting
   observe({updateSelectInput(
     session = getDefaultReactiveDomain(),
-    inputId = "ld_var_id",
+    inputId = "logd_var_id",
     label = "Select Dependent Variable",
     
-    choices =names(data_log())[sapply(data_log(), function(x) (setequal(c(0,1),unique(x))))],
+    choices =names(data_logistic())[sapply(data_logistic(), function(x) (setequal(c(0,1),unique(x))))],
     selected = NULL
   )
-  # observe({update_input_categorical("ld_var_id","Select Dependent Variable",data_log)
-  update_input("li_var_id","Select Independent Variable",data_log)})
+  # observe({update_input_categorical("logd_var_id","Select Dependent Variable",data_logistic)
+  update_input("logi_var_id","Select Independent Variable",data_logistic)})
+  
+  #logistic specific splitting
+  observe({updateSelectInput(
+    session = getDefaultReactiveDomain(),
+    inputId = "logistic_response_id",
+    label = "Select Dependent Variable",
+    
+    choices =names(data_logistic_test())[sapply(data_logistic_test(), function(x) (setequal(c(0,1),unique(x))))],
+    selected = NULL
+  )
+
+    update_input("logistic_pred_id","Select Independent Variable",data_logistic_test)})
   
  
   
@@ -820,7 +1000,7 @@ server = function(input, output,session) {
     
   )
   output$histogram = renderPlot({
-    req(input$hist_var_id)
+    req(input$file_hist,input$hist_var_id)
     x = as.numeric(unlist(data_hist()[,input$hist_var_id]))
     # print(is.numeric(x))
     # print(x)
@@ -837,7 +1017,7 @@ server = function(input, output,session) {
   }
   )
   output$scatter = renderPlot({
-    req(input$scatter_var1_id,input$scatter_var2_id)
+    req(input$file_scatter,input$input$scatter_var1_id,input$scatter_var2_id)
     
     x = as.numeric(unlist(data_scatter()[,input$scatter_var1_id]))
     y=as.numeric(unlist(data_scatter()[,input$scatter_var2_id]))
@@ -852,7 +1032,7 @@ server = function(input, output,session) {
   }
   )
   output$barchart = renderPlot({
-    req(input$bar_var1_id,input$bar_var2_id)
+    req(input$file_bar,input$bar_var1_id,input$bar_var2_id)
     y=data_barchart()[,input$bar_var1_id]
     x=data_barchart()[,input$bar_var2_id]
     ggplot(data=data_barchart(), aes(x=x, y=y)) +
@@ -867,7 +1047,7 @@ server = function(input, output,session) {
   }
   )
   output$boxplot = renderPlot({
-    req(input$boxplot_var1_id,input$boxplot_var2_id)
+    req(input$file_boxplot,input$boxplot_var1_id,input$boxplot_var2_id)
     
     x = data_boxplot()[,input$boxplot_var1_id]
     y=data_boxplot()[,input$boxplot_var2_id]
@@ -883,7 +1063,7 @@ server = function(input, output,session) {
   }
   )
   output$lineplot = renderPlot({
-    req(input$line_var1_id,input$line_var2_id)
+    req(input$file_line,input$line_var1_id,input$line_var2_id)
     x = data_line()[,input$line_var1_id]
     y=data_line()[,input$line_var2_id]
     # plot(x,y,type = "l",xlab=input$line_var1_id,ylab=input$line_var2_id,main = paste("Line plot of" ,input$line_var1_id,"vs",input$line_var2_id))
@@ -954,7 +1134,7 @@ server = function(input, output,session) {
   #   )}
   
   #Set up the output for simple
-  
+  # simple regression random splitting
   train_indices_simple = reactive({
   req(input$simple_size, data_simple())
   return(sample(nrow(data_simple()), round(0.01*(as.numeric(input$simple_size)) * nrow(data_simple()))))
@@ -1045,44 +1225,59 @@ server = function(input, output,session) {
     predict(simple.model(), newdata = data_simple_test())
     
   })
-  #1048
+ 
   #performance of test data
   #mse
-  mse_simple = reactive({
-    req(simple_model(),test_data_simple(),input$sd_var_id)
-    y=input$sd_var_id
-    mean(((as.numeric(unlist(test_data_simple()[,y]))) - y_pred_simple())^2)
+  mse_simple_ = reactive({
+    req(simple.model(),data_simple_test(),input$simple_response_id)
+    y=input$simple_response_id
+    mean(((as.numeric(unlist(data_simple_test()[,y]))) - y_pred_simple_())^2)
     
   })
-  output$mse_simple=renderText({
-    return(paste("mean squared error  ",round(mse_simple(),4)))
+  output$mse_simple_=renderText({
+    return(paste("mean squared error  ",round(mse_simple_(),4)))
     
   })
   #adjusted r2
-  output$adjr2_simple=renderText({
-    req(simple_model(),test_data_simple(),input$sd_var_id)
-    y=input$sd_var_id
-    tss = sum((as.numeric(unlist(test_data_simple()[,y])) - mean(as.numeric(unlist(test_data_simple()[,y]))))^2)
-    r_squared = 1 - (mse_simple() / tss)
-    n = nrow(test_data_simple())
-    p = length(simple_model()$coefficients) - 1
-    adj_r_squared = 1 - ((mse_simple() / (n - p - 1)) / (tss / (n - 1)))
-    adj_r_squared =paste("adjusted rsquared  ",round(adj_r_squared,5))
-    adj_r_squared
+  output$adjr2_simple_=renderText({
+    req(simple.model(),data_simple_test(),input$simple_response_id)
+    y=input$simple_response_id
+    tss = sum((as.numeric(unlist(data_simple_test()[,y])) - mean(as.numeric(unlist(data_simple_test()[,y]))))^2)
+    r_squared = 1 - (mse_simple_() / tss)
+    n = nrow(data_simple_test())
+    p = length(simple.model()$coefficients) - 1
+    adj_r_squared_ = 1 - ((mse_simple_() / (n - p - 1)) / (tss / (n - 1)))
+    adj_r_squared_ =paste("adjusted rsquared  ",round(adj_r_squared_,5))
+    adj_r_squared_
     
   })
-  output$text_simple=renderText({
-    req(simple_model())
+  output$text_simple_=renderText({
+    req(simple.model())
     return("model's performance on the test data")
+  }
+  )
+  output$plot_simple_ = renderPlot({
+    # this plot is for train dataset
+    req(input$simple_response_id, input$simple_pred_id, data_simple_train())
+    x=input$simple_pred_id
+    y=input$simple_response_id
+    # Create a scatter plot of the data
+    ggplot(data_simple_train(), aes(x = as.numeric(unlist(data_simple_train()[,x])), y = as.numeric(unlist(data_simple_train()[,y]))) )+
+      geom_point(color = "blue")+
+      # Add the regression line to the plot
+      geom_smooth(method = "lm") +
+      labs(x = x, y =y ) +
+      ggtitle(paste("Scatter Plot of ",x," VS ",y))+
+      theme
   }
   )
   
   ## multiple linear regression
   
-  
+  # multiple regression random splitting
   output$matrix_plot = renderPlot({
-    req(input$mi_var_id, input$md_var_id)
-    ggpairs(data_multiple()[c(input$md_var_id, input$mi_var_id)])
+    req(input$md_var_id, input$mi_var_id)
+    ggpairs(data_multiple()[unique(c(input$md_var_id, input$mi_var_id))])
     
   })
   train_indices_multiple = reactive({
@@ -1103,7 +1298,7 @@ server = function(input, output,session) {
     lm(formula = as.formula(paste(input$md_var_id, paste(input$mi_var_id, collapse = " + "), sep = " ~ ")), data = train_data_multiple())
   })
   
-  output$summary_multi = renderPrint({
+  output$summary_multiple = renderPrint({
     req(multiple_model())
     summary(multiple_model())
    
@@ -1146,23 +1341,80 @@ server = function(input, output,session) {
     return("model's performance on the test data")
   }
   )
+  #Multiple regression specific splitting
+  output$matrix_plot_ = renderPlot({
+    req(input$multiple_response_id, input$multiple_pred_id)
+    ggpairs(data_multiple_train()[unique(c(input$multiple_response_id, input$multiple_pred_id))])
+    
+  })
+ 
+  multiple.model =reactive({
+    req(input$multiple_response_id, input$multiple_pred_id)
+    lm(formula = as.formula(paste(input$multiple_response_id, paste(input$multiple_pred_id, collapse = " + "), sep = " ~ ")), data = data_multiple_train())
+  })
+  
+  output$summary_multiple_ = renderPrint({
+    req(multiple.model())
+    summary(multiple.model())
+    
+  })
+  #predict 
+  predict_multiple_=reactive({
+    req(multiple.model())
+    predict(multiple.model(), newdata = data_multiple_test())
+  })
+  
+  mse_multiple_=reactive({
+    req(multiple.model(),data_multiple_test(),input$multiple_response_id)
+    y=input$multiple_response_id
+    
+    mean((as.numeric(unlist(data_multiple_test()[,y])) - predict_multiple_())^2)
+  })
+  #performance of test dataset
+  #mse
+  output$mse_multiple_ = renderText({
+    
+    return(paste("mean squared error ",round(mse_multiple_(),4)))
+    
+  })
+  #adjusted r2
+  output$adjr2_multiple_=renderText({
+    req(input$multiple_response_id,multiple.model(),mse_multiple_())
+    y=input$multiple_response_id
+    tss = sum((as.numeric(unlist(data_multiple_test()[,y])) - mean(as.numeric(unlist(data_multiple_test()[,y]))))^2)
+    r_squared = 1 - (mse_multiple_() / tss)
+    n = nrow(data_multiple_test())
+    p = length(multiple.model()$coefficients) - 1
+    adj_r_squared = 1 - ((mse_multiple_() / (n - p - 1)) / (tss / (n - 1)))
+    adj_r_squared =paste("adjusted rsquared  ",round(adj_r_squared,5))
+    adj_r_squared
+    
+  })
+  
+  output$text_multiple_=renderText({
+    req(multiple.model())
+    return("model's performance on the test data")
+  }
+  )
+  
   # logistic classification
+  # logistic random splitting
   train_indices_logistic = reactive({
-    req(input$logistic_size, data_log())
-    return(sample(nrow(data_log()), round(0.01*(as.numeric(input$logistic_size)) * nrow(data_log()))))
+    req(input$logistic_size, data_logistic())
+    return(sample(nrow(data_logistic()), round(0.01*(as.numeric(input$logistic_size)) * nrow(data_logistic()))))
   })
   train_data_logistic = reactive({
-    req(data_log(),train_indices_logistic(),input$logistic_size)
-    return(data_log()[train_indices_logistic(), ])
+    req(data_logistic(),train_indices_logistic(),input$logistic_size)
+    return(data_logistic()[train_indices_logistic(), ])
     
   })
   test_data_logistic =  reactive({
-    req(data_log(),train_indices_logistic())
-    return(data_log()[-(train_indices_logistic()), ])
+    req(data_logistic(),train_indices_logistic())
+    return(data_logistic()[-(train_indices_logistic()), ])
   })
   logistic_model=reactive({
-    req(input$li_var_id, input$ld_var_id,input$logistic_size)
-    glm(formula = as.formula(paste(input$ld_var_id, paste(input$li_var_id, collapse = " + "), sep = " ~ ")), data = train_data_logistic(),family = "binomial") 
+    req(input$logi_var_id, input$logd_var_id,input$logistic_size)
+    glm(formula = as.formula(paste(input$logd_var_id, paste(input$logi_var_id, collapse = " + "), sep = " ~ ")), data = train_data_logistic(),family = "binomial") 
     
   })
   output$summary_logistic = renderPrint({
@@ -1170,27 +1422,62 @@ server = function(input, output,session) {
     summary(logistic_model())
   })
   #predict 
-  predict_logistic=reactive({
+  predict_logistic_=reactive({
     req(logistic_model())
     predicted_prob=predict(logistic_model(), newdata = test_data_logistic(),type="response")
     predicted_classes=ifelse(predicted_prob > 0.5, 1, 0)
     predicted_classes
   })
   #Accuracy
-  output$logisticAccuracy=renderText({
+  output$logistic_accuracy=renderText({
     req(test_data_logistic())
     # Get the accuracy of model
-    accuracy = paste("Accuracy of logistic model is",round(mean(predict_logistic() == test_data_logistic()[,input$ld_var_id])*100,2),"%")
+    accuracy = paste("Accuracy of logistic model is",round(mean(predict_logistic_() == test_data_logistic()[,input$logd_var_id])*100,2),"%")
     accuracy
   })
-  output$logisticCM=renderPrint({
-    req(test_data_logistic(),input$ld_var_id)
+  output$logistic_cm=renderPrint({
+    req(test_data_logistic(),input$logd_var_id)
     # Get the confusion matrix
-    confusion = table( actual=as.numeric(unlist(test_data_logistic()[,input$ld_var_id])),predicted=predict_logistic())
+    confusion = table( actual=as.numeric(unlist(test_data_logistic()[,input$logd_var_id])),predicted=predict_logistic_())
     confusion
   })
   output$text_logistic=renderText({
     req(logistic_model())
+    return("model's performance on the test data")
+  }
+  )
+  #logistic specific splitting
+  logistic.model=reactive({
+    req(input$logistic_pred_id, input$logistic_response_id,input$logistic_size)
+    glm(formula = as.formula(paste(input$logistic_response_id, paste(input$logistic_pred_id, collapse = " + "), sep = " ~ ")), data = data_logistic_train(),family = "binomial") 
+    
+  })
+  output$summaryLogistic = renderPrint({
+    req(logistic.model())
+    summary(logistic.model())
+  })
+  #predict 
+  predict_logistic=reactive({
+    req(logistic.model())
+    predicted_prob=predict(logistic.model(), newdata = data_logistic_test(),type="response")
+    predicted_classes=ifelse(predicted_prob > 0.5, 1, 0)
+    predicted_classes
+  })
+  #Accuracy
+  output$logisticAccuracy=renderText({
+    req(data_logistic_test())
+    # Get the accuracy of model
+    accuracy = paste("Accuracy of logistic model is",round(mean(predict_logistic() == data_logistic_test()[,input$logistic_response_id])*100,2),"%")
+    accuracy
+  })
+  output$logisticCM=renderPrint({
+    req(data_logistic_test(),input$logistic_response_id)
+    # Get the confusion matrix
+    confusion = table( actual=as.numeric(unlist(data_logistic_test()[,input$logistic_response_id])),predicted=predict_logistic())
+    confusion
+  })
+  output$textLogistic=renderText({
+    req(logistic.model())
     return("model's performance on the test data")
   }
   )
